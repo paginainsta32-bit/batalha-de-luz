@@ -36,7 +36,6 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      /* Margem de segurança para não ficar atrás dos botões do TikTok */
       padding-top: 68px;
       padding-bottom: 72px;
     }
@@ -470,7 +469,7 @@
       display: none;
       flex-direction: column;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     #config-modal.open {
@@ -507,7 +506,7 @@
       background: linear-gradient(135deg, #ffd54f, #ff8f00);
       color: #140c00;
       border: none;
-      padding: 14px;
+      padding: 13px;
       border-radius: 12px;
       font-weight: 900;
       font-size: 15px;
@@ -518,10 +517,10 @@
       background: rgba(255, 255, 255, 0.15);
       color: #fff;
       border: 1.5px solid rgba(255, 255, 255, 0.35);
-      padding: 12px;
+      padding: 11px;
       border-radius: 12px;
       font-weight: 800;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
     }
 
@@ -638,7 +637,7 @@
         <div class="cta-desc">+5 PTS AZUL 🕊️</div>
       </div>
       <div class="cta-box full">
-        ❤️ CURTA = +1 PT &nbsp;|&nbsp; 🌹 PRESENTE = +50 PTS + FOTO GIGANTE!
+        ❤️ TOQUE NA TELA = +1 PT/TOQUE &nbsp;|&nbsp; 🌹 PRESENTE = +50 PTS!
       </div>
     </div>
 
@@ -665,8 +664,8 @@
       <div class="test-grid">
         <button class="btn-secondary" onclick="simulateAction('amen')">✨ Simular AMÉM</button>
         <button class="btn-secondary" onclick="simulateAction('aleluia')">🕊️ Simular ALELUIA</button>
+        <button class="btn-secondary" onclick="simulateAction('like')">❤️ +15 Curtidas</button>
         <button class="btn-secondary" onclick="simulateAction('gift_amen')">🌹 Rosa (AMÉM)</button>
-        <button class="btn-secondary" onclick="simulateAction('gift_aleluia')">👑 Coroa (ALELUIA)</button>
       </div>
 
       <button class="btn-secondary" style="margin-top: 6px; border-color: #ff5252; color: #ff8a80;" onclick="toggleModal()">Fechar Painel</button>
@@ -678,6 +677,7 @@
     let scoreAleluia = 50;
     let roundSeconds = 120;
     let leaderboard = {};
+    let userTeams = {}; // Memória do time escolhido por cada seguidor
     let simInterval = null;
     let ws = null;
 
@@ -973,27 +973,36 @@
       }
     }
 
+    function getFollowerTeam(userId) {
+      if (userTeams[userId]) return userTeams[userId];
+      return scoreAmen <= scoreAleluia ? 'amen' : 'aleluia';
+    }
+
     function handleLiveEvent(msg) {
       const ev = msg.event || msg.type;
       const data = msg.data || msg;
+      const userId = data.uniqueId || data.nickname || 'Seguidor';
       const name = data.nickname || data.uniqueId || 'Seguidor';
       const avatar = data.profilePictureUrl || defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
 
       if (ev === 'chat') {
         const comment = (data.comment || '').toUpperCase();
         if (comment.includes('AMEM') || comment.includes('AMÉM') || comment === '1') {
+          userTeams[userId] = 'amen';
           spawnFollowerOrb({ name, avatar, team: 'amen', text: 'AMÉM ✨', points: 5 });
         } else if (comment.includes('ALELUIA') || comment.includes('GLORIA') || comment === '2') {
+          userTeams[userId] = 'aleluia';
           spawnFollowerOrb({ name, avatar, team: 'aleluia', text: 'ALELUIA 🕊️', points: 5 });
         } else {
-          const team = Math.random() > 0.5 ? 'amen' : 'aleluia';
+          const team = getFollowerTeam(userId);
           spawnFollowerOrb({ name, avatar, team, text: data.comment.slice(0, 16), points: 2 });
         }
       } else if (ev === 'like') {
-        const team = Math.random() > 0.5 ? 'amen' : 'aleluia';
-        spawnFollowerOrb({ name, avatar, team, text: '❤️ Curtiu', points: 1 });
+        const likes = Number(data.likeCount) || 1;
+        const team = getFollowerTeam(userId);
+        spawnFollowerOrb({ name, avatar, team, text: `❤️ +${likes} curtidas`, points: likes });
       } else if (ev === 'gift') {
-        const team = scoreAmen <= scoreAleluia ? 'amen' : 'aleluia';
+        const team = getFollowerTeam(userId);
         const giftName = data.giftName || 'Presente';
         const diamonds = (data.diamondCount || 1) * (data.repeatCount || 1);
         spawnFollowerOrb({ name, avatar, team, text: giftName, isGift: true, points: Math.max(25, diamonds * 10) });
@@ -1018,6 +1027,10 @@
 
       if (type === 'amen') spawnFollowerOrb({ name, avatar, team: 'amen', text: 'AMÉM ✨', points: 5 });
       if (type === 'aleluia') spawnFollowerOrb({ name, avatar, team: 'aleluia', text: 'ALELUIA 🕊️', points: 5 });
+      if (type === 'like') {
+        const team = getFollowerTeam(name);
+        spawnFollowerOrb({ name, avatar, team, text: '❤️ +15 curtidas', points: 15 });
+      }
       if (type === 'gift_amen') spawnFollowerOrb({ name, avatar, team: 'amen', text: 'Rosa 🌹', isGift: true, points: 50 });
       if (type === 'gift_aleluia') spawnFollowerOrb({ name, avatar, team: 'aleluia', text: 'Coroa 👑', isGift: true, points: 100 });
     }
@@ -1032,9 +1045,10 @@
         btn.textContent = '⏸️ Pausar Simulação';
         simInterval = setInterval(() => {
           const r = Math.random();
-          if (r < 0.42) simulateAction('amen');
-          else if (r < 0.84) simulateAction('aleluia');
-          else if (r < 0.92) simulateAction('gift_amen');
+          if (r < 0.35) simulateAction('amen');
+          else if (r < 0.70) simulateAction('aleluia');
+          else if (r < 0.90) simulateAction('like');
+          else if (r < 0.95) simulateAction('gift_amen');
           else simulateAction('gift_aleluia');
         }, 1100);
       }
