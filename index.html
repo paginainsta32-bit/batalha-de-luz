@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0818" />
+  <title>Batalha de Luz - AMÉM vs ALELUIA | TikTok Live</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Montserrat:wght@600;800;900&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #05040d;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100dvh;
+      max-width: 540px;
+      background: radial-gradient(circle at 50% 18%, #2c1e4a 0%, #120d29 52%, #070512 100%);
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(255, 200, 80, 0.25);
+    }
+
+    canvas#bg-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Raios celestiais rotativos */
+    .god-rays {
+      position: absolute;
+      top: -25%;
+      left: 50%;
+      width: 220%;
+      height: 120%;
+      transform: translateX(-50%);
+      background: repeating-conic-gradient(
+        from 0deg,
+        rgba(255, 223, 128, 0.08) 0deg 10deg,
+        transparent 10deg 25deg
+      );
+      animation: spinRays 45s linear infinite;
+      z-index: 0;
+      pointer-events: none;
+      mask-image: radial-gradient(circle at 50% 35%, black 20%, transparent 72%);
+      -webkit-mask-image: radial-gradient(circle at 50% 35%, black 20%, transparent 72%);
+    }
+
+    @keyframes spinRays {
+      from { transform: translateX(-50%) rotate(0deg); }
+      to { transform: translateX(-50%) rotate(360deg); }
+    }
+
+    /* HUD Superior */
+    .top-hud {
+      position: relative;
+      z-index: 10;
+      padding: 14px 14px 6px;
+      text-align: center;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .ws-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+
+    .ws-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffaa00;
+      box-shadow: 0 0 8px #ffaa00;
+    }
+    .ws-dot.connected {
+      background: #2ecc71;
+      box-shadow: 0 0 8px #2ecc71;
+    }
+
+    .hud-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 215, 110, 0.45);
+      color: #ffe8a3;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .game-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(20px, 5.5vw, 26px);
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      background: linear-gradient(180deg, #ffffff 0%, #ffe082 55%, #ff9800 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 10px rgba(255, 193, 7, 0.5));
+    }
+
+    .subtitle {
+      font-size: 11px;
+      color: #d8c8ff;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-top: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Barra de Disputa (Cabo de Guerra Celestial) */
+    .tug-wrapper {
+      position: relative;
+      z-index: 10;
+      margin: 10px 14px 6px;
+      background: rgba(12, 9, 28, 0.8);
+      border: 1.5px solid rgba(255, 215, 100, 0.45);
+      border-radius: 16px;
+      padding: 10px 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .scores-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .team-amen-label {
+      color: #ffd54f;
+      text-shadow: 0 0 10px rgba(255, 213, 79, 0.6);
+    }
+
+    .team-aleluia-label {
+      color: #4fc3f7;
+      text-shadow: 0 0 10px rgba(79, 195, 247, 0.6);
+    }
+
+    .timer-pill {
+      background: rgba(255, 255, 255, 0.12);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .progress-track {
+      position: relative;
+      width: 100%;
+      height: 22px;
+      background: #0d1b3e;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .progress-fill-amen {
+      height: 100%;
+      width: 50%;
+      background: linear-gradient(90deg, #ff8f00, #ffd54f, #fff59d);
+      box-shadow: 0 0 18px #ffd54f;
+      transition: width 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .progress-divider {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 4px;
+      background: #fff;
+      box-shadow: 0 0 12px #fff, 0 0 22px #ffd54f;
+      transform: translateX(-50%);
+      transition: left 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Ranking Top 3 Abençoados */
+    .mvp-bar {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 6px 14px;
+    }
+
+    .mvp-card {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 215, 110, 0.3);
+      border-radius: 12px;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .mvp-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid #ffd54f;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #2b214d;
+    }
+
+    .mvp-info {
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .mvp-name {
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #fff;
+    }
+
+    .mvp-pts {
+      font-size: 9px;
+      color: #ffd54f;
+      font-weight: 700;
+    }
+
+    /* Arena Central */
+    #arena {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      height: calc(100dvh - 285px);
+      overflow: hidden;
+    }
+
+    .center-cross {
+      position: absolute;
+      top: 46%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90px;
+      height: 130px;
+      pointer-events: none;
+      opacity: 0.22;
+      filter: drop-shadow(0 0 25px #ffd54f);
+      animation: pulseCross 3.5s ease-in-out infinite;
+    }
+
+    @keyframes pulseCross {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.2; }
+      50% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.36; }
+    }
+
+    /* Orbe do Seguidor Subindo */
+    .follower-orb {
+      position: absolute;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+      animation: floatUp 3.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      z-index: 8;
+    }
+
+    .follower-orb img {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 2.5px solid #ffd54f;
+      box-shadow: 0 0 16px rgba(255, 213, 79, 0.85);
+      object-fit: cover;
+      background: #1f173d;
+    }
+
+    .follower-orb.aleluia img {
+      border-color: #4fc3f7;
+      box-shadow: 0 0 16px rgba(79, 195, 247, 0.85);
+    }
+
+    .follower-orb.gift img {
+      width: 66px;
+      height: 66px;
+      border-width: 3.5px;
+      box-shadow: 0 0 28px #fff, 0 0 40px #ffd54f;
+    }
+
+    .orb-tag {
+      margin-top: 3px;
+      background: rgba(10, 8, 24, 0.88);
+      border: 1px solid rgba(255, 215, 100, 0.5);
+      padding: 2px 7px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+      color: #fff;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(30px) scale(0.5); opacity: 0; }
+      15% { transform: translateY(-40px) scale(1.05); opacity: 1; }
+      85% { opacity: 1; }
+      100% { transform: translateY(-420px) scale(0.9); opacity: 0; }
+    }
+
+    /* Banner de Destaque para Presentes */
+    #gift-banner {
+      position: absolute;
+      top: 28%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      z-index: 20;
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.95), rgba(255, 111, 0, 0.95));
+      color: #140c00;
+      padding: 12px 20px;
+      border-radius: 20px;
+      border: 2px solid #fff;
+      box-shadow: 0 0 40px rgba(255, 215, 64, 0.9);
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      width: 85%;
+    }
+
+    #gift-banner.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    #gift-banner h3 {
+      font-size: 15px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    #gift-banner p {
+      font-size: 12px;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
+    /* Legenda de Comandos Inferior (Call to Action para os Seguidores) */
+    .bottom-cta {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 12;
+      background: rgba(12, 9, 28, 0.88);
+      border: 1.5px solid rgba(255, 215, 100, 0.45);
+      border-radius: 16px;
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      backdrop-filter: blur(8px);
+    }
+
+    .cta-box {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 7px 8px;
+      text-align: center;
+    }
+
+    .cta-box.amen { border-left: 3px solid #ffd54f; }
+    .cta-box.aleluia { border-left: 3px solid #4fc3f7; }
+    .cta-box.full {
+      grid-column: span 2;
+      background: linear-gradient(90deg, rgba(255, 213, 79, 0.16), rgba(79, 195, 247, 0.16));
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 11px;
+      font-weight: 800;
+      color: #ffe082;
+    }
+
+    .cta-cmd {
+      font-size: 12px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .cta-desc {
+      font-size: 10px;
+      color: #ccc;
+      margin-top: 2px;
+    }
+
+    /* Modal de Configuração / Simulação Mobile */
+    #config-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      background: rgba(7, 5, 18, 0.94);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    #config-modal.open {
+      display: flex;
+    }
+
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      color: #ffd54f;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 11px;
+      color: #ccc;
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 215, 100, 0.5);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ffd54f, #ff8f00);
+      color: #140c00;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 900;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 10px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    /* Overlay de Vitória da Rodada */
+    #victory-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      background: rgba(10, 7, 25, 0.88);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+
+    #victory-overlay.show {
+      display: flex;
+    }
+
+    #victory-overlay h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 30px;
+      color: #ffd54f;
+      text-shadow: 0 0 25px rgba(255, 213, 79, 0.9);
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="god-rays"></div>
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- HUD Superior -->
+    <div class="top-hud">
+      <div class="status-bar">
+        <div class="ws-badge">
+          <span class="ws-dot" id="ws-dot"></span>
+          <span id="ws-status">MODO PRONTO</span>
+        </div>
+        <div class="hud-actions">
+          <button class="hud-btn" onclick="toggleFullscreen()">⛶ Tela Cheia</button>
+          <button class="hud-btn" onclick="toggleModal()">⚙️ Live</button>
+        </div>
+      </div>
+
+      <h1 class="game-title">BATALHA DE LUZ</h1>
+      <p class="subtitle">Comente para levantar sua bênção!</p>
+    </div>
+
+    <!-- Barra de Disputa -->
+    <div class="tug-wrapper">
+      <div class="scores-row">
+        <span class="team-amen-label">✨ AMÉM: <span id="score-amen">50</span></span>
+        <span class="timer-pill" id="round-timer">02:00</span>
+        <span class="team-aleluia-label">🕊️ ALELUIA: <span id="score-aleluia">50</span></span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill-amen" id="progress-fill"></div>
+        <div class="progress-divider" id="progress-divider"></div>
+      </div>
+    </div>
+
+    <!-- Top 3 Seguidores Mais Ativos -->
+    <div class="mvp-bar" id="mvp-bar">
+      <div class="mvp-card">
+        <img class="mvp-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=1" alt="">
+        <div class="mvp-info">
+          <div class="mvp-name">1º Aguardando...</div>
+          <div class="mvp-pts">0 pts</div>
+        </div>
+      </div>
+      <div class="mvp-card">
+        <img class="mvp-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=2" alt="">
+        <div class="mvp-info">
+          <div class="mvp-name">2º Aguardando...</div>
+          <div class="mvp-pts">0 pts</div>
+        </div>
+      </div>
+      <div class="mvp-card">
+        <img class="mvp-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=3" alt="">
+        <div class="mvp-info">
+          <div class="mvp-name">3º Aguardando...</div>
+          <div class="mvp-pts">0 pts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arena Central -->
+    <div id="arena">
+      <svg class="center-cross" viewBox="0 0 100 140" fill="#ffd54f">
+        <rect x="42" y="10" width="16" height="120" rx="4" />
+        <rect x="15" y="38" width="70" height="16" rx="4" />
+      </svg>
+      <div id="gift-banner">
+        <h3 id="gift-user">@Seguidor enviou uma Rosa!</h3>
+        <p id="gift-effect">+50 PONTOS DE LUZ!</p>
+      </div>
+    </div>
+
+    <!-- Chamada para Ação (CTA) -->
+    <div class="bottom-cta">
+      <div class="cta-box amen">
+        <div class="cta-cmd">Comente "AMÉM"</div>
+        <div class="cta-desc">+5 pts Time Dourado ✨</div>
+      </div>
+      <div class="cta-box aleluia">
+        <div class="cta-cmd">Comente "ALELUIA"</div>
+        <div class="cta-desc">+5 pts Time Celestial 🕊️</div>
+      </div>
+      <div class="cta-box full">
+        ❤️ TOQUE NA TELA = +1 PT &nbsp;|&nbsp; 🌹 PRESENTE = +50 PTS + FOTO GIGANTE!
+      </div>
+    </div>
+
+    <!-- Overlay Vitória -->
+    <div id="victory-overlay">
+      <h2 id="victory-title">VITÓRIA DO AMÉM!</h2>
+      <p style="color:#ffe082; font-size:14px; font-weight:700;">Que a paz e a luz estejam com todos!</p>
+      <p style="color:#aaa; font-size:12px; margin-top:14px;">Nova rodada começando em 5 segundos...</p>
+    </div>
+
+    <!-- Modal de Configuração e Teste -->
+    <div id="config-modal">
+      <h2 class="modal-title">Configurar Live (Celular)</h2>
+      
+      <div class="input-group">
+        <label>URL do Servidor WebSocket (Render / Glitch / TikFinity):</label>
+        <input type="text" id="ws-url-input" placeholder="wss://seu-servidor.onrender.com" />
+      </div>
+      <button class="btn-primary" onclick="saveAndConnect()">Salvar e Conectar</button>
+
+      <hr style="border-color: rgba(255,255,255,0.1); margin: 4px 0;">
+      <p style="font-size: 11px; color: #ffd54f; font-weight: 800; text-align: center;">SIMULADOR DE LIVE (TESTE SEM CONEXÃO)</p>
+      
+      <button class="btn-secondary" id="sim-toggle-btn" onclick="toggleSimulation()">▶️ Iniciar Simulação Automática</button>
+      
+      <div class="test-grid">
+        <button class="btn-secondary" onclick="simulateAction('amen')">✨ Simular AMÉM</button>
+        <button class="btn-secondary" onclick="simulateAction('aleluia')">🕊️ Simular ALELUIA</button>
+        <button class="btn-secondary" onclick="simulateAction('gift_amen')">🌹 Rosa (AMÉM)</button>
+        <button class="btn-secondary" onclick="simulateAction('gift_aleluia')">💎 Presente (ALELUIA)</button>
+      </div>
+
+      <button class="btn-secondary" style="margin-top: 6px; border-color: #ff5252; color: #ff8a80;" onclick="toggleModal()">Fechar Painel</button>
+    </div>
+  </div>
+
+  <script>
+    // Estado do Jogo
+    let scoreAmen = 50;
+    let scoreAleluia = 50;
+    let roundSeconds = 120;
+    let leaderboard = {};
+    let simInterval = null;
+    let ws = null;
+
+    const defaultAvatars = [
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Joao',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Pedro',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Lucas',
+      'https://api.dicebear.com/7.x/avataaars/svg?seed=Ester'
+    ];
+
+    // Sintetizador de Áudio Celestial (Web Audio API - sem precisar baixar MP3)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playChime(freq = 523.25, duration = 0.4) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + duration);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // Partículas de Luz no Fundo
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    for (let i = 0; i < 45; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 2.5 + 0.8,
+        vy: -(Math.random() * 0.6 + 0.2),
+        alpha: Math.random()
+      });
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.y += p.vy;
+        if (p.y < 0) p.y = canvas.height;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 224, 130, ${p.alpha})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // Atualizar Placar e Barra
+    function updateUI() {
+      document.getElementById('score-amen').textContent = scoreAmen;
+      document.getElementById('score-aleluia').textContent = scoreAleluia;
+      const total = scoreAmen + scoreAleluia;
+      const pct = total === 0 ? 50 : Math.min(92, Math.max(8, (scoreAmen / total) * 100));
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-divider').style.left = pct + '%';
+      updateLeaderboard();
+    }
+
+    function updateLeaderboard() {
+      const sorted = Object.values(leaderboard).sort((a, b) => b.pts - a.pts).slice(0, 3);
+      const cards = document.querySelectorAll('.mvp-card');
+      sorted.forEach((user, idx) => {
+        if (cards[idx]) {
+          cards[idx].querySelector('img').src = user.avatar;
+          cards[idx].querySelector('.mvp-name').textContent = `${idx + 1}º ${user.name}`;
+          cards[idx].querySelector('.mvp-pts').textContent = `${user.pts} pts`;
+        }
+      });
+    }
+
+    // Spawnar Orbe do Seguidor Subindo na Tela
+    function spawnFollowerOrb({ name, avatar, team, text, isGift = false, points = 5 }) {
+      if (team === 'amen') scoreAmen += points;
+      else scoreAleluia += points;
+
+      if (!leaderboard[name]) {
+        leaderboard[name] = { name, avatar, pts: 0 };
+      }
+      leaderboard[name].pts += points;
+      updateUI();
+
+      const arena = document.getElementById('arena');
+      const orb = document.createElement('div');
+      orb.className = `follower-orb ${team} ${isGift ? 'gift' : ''}`;
+      const leftPos = Math.floor(Math.random() * 72) + 8;
+      orb.style.left = leftPos + '%';
+
+      orb.innerHTML = `
+        <img src="${avatar}" onerror="this.src='${defaultAvatars[0]}'" />
+        <div class="orb-tag">${name}: ${text}</div>
+      `;
+      arena.appendChild(orb);
+
+      playChime(isGift ? 783.99 : (team === 'amen' ? 523.25 : 659.25), isGift ? 0.7 : 0.35);
+
+      if (isGift) {
+        showGiftBanner(name, text, points, team);
+      }
+
+      setTimeout(() => orb.remove(), 3200);
+    }
+
+    let bannerTimeout = null;
+    function showGiftBanner(user, giftName, pts, team) {
+      const banner = document.getElementById('gift-banner');
+      document.getElementById('gift-user').textContent = `🌟 ${user} enviou ${giftName}!`;
+      document.getElementById('gift-effect').textContent = `+${pts} PONTOS PARA ${team === 'amen' ? 'AMÉM ✨' : 'ALELUIA 🕊️'}`;
+      banner.classList.add('show');
+      clearTimeout(bannerTimeout);
+      bannerTimeout = setTimeout(() => banner.classList.remove('show'), 2800);
+    }
+
+    // Temporizador da Rodada
+    setInterval(() => {
+      if (roundSeconds > 0) {
+        roundSeconds--;
+        const m = String(Math.floor(roundSeconds / 60)).padStart(2, '0');
+        const s = String(roundSeconds % 60).padStart(2, '0');
+        document.getElementById('round-timer').textContent = `${m}:${s}`;
+      } else {
+        endRound();
+      }
+    }, 1000);
+
+    function endRound() {
+      const overlay = document.getElementById('victory-overlay');
+      const title = document.getElementById('victory-title');
+      if (scoreAmen > scoreAleluia) {
+        title.textContent = '✨ VITÓRIA DO AMÉM! ✨';
+      } else if (scoreAleluia > scoreAmen) {
+        title.textContent = '🕊️ VITÓRIA DO ALELUIA! 🕊️';
+      } else {
+        title.textContent = '🙏 EMPATE ABENÇOADO! 🙏';
+      }
+      overlay.classList.add('show');
+      playChime(880, 1.0);
+
+      setTimeout(() => {
+        overlay.classList.remove('show');
+        scoreAmen = 50;
+        scoreAleluia = 50;
+        roundSeconds = 120;
+        updateUI();
+      }, 5000);
+    }
+
+    // Conexão WebSocket para Nuvem (Celular)
+    function connectWebSocket(url) {
+      if (!url) return;
+      if (ws) ws.close();
+      const dot = document.getElementById('ws-dot');
+      const status = document.getElementById('ws-status');
+      status.textContent = 'CONECTANDO...';
+
+      try {
+        ws = new WebSocket(url);
+        ws.onopen = () => {
+          dot.classList.add('connected');
+          status.textContent = 'LIVE CONECTADA';
+        };
+        ws.onclose = () => {
+          dot.classList.remove('connected');
+          status.textContent = 'DESCONECTADO';
+        };
+        ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            handleLiveEvent(payload);
+          } catch (e) {}
+        };
+      } catch (err) {
+        status.textContent = 'ERRO NA URL';
+      }
+    }
+
+    // Interpretador de Eventos do TikTok (Compatível com TikFinity e TikTok-Live-Connector)
+    function handleLiveEvent(msg) {
+      const ev = msg.event || msg.type;
+      const data = msg.data || msg;
+      const name = data.nickname || data.uniqueId || 'Seguidor';
+      const avatar = data.profilePictureUrl || defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
+
+      if (ev === 'chat') {
+        const comment = (data.comment || '').toUpperCase();
+        if (comment.includes('AMEM') || comment.includes('AMÉM') || comment === '1') {
+          spawnFollowerOrb({ name, avatar, team: 'amen', text: 'AMÉM ✨', points: 5 });
+        } else if (comment.includes('ALELUIA') || comment.includes('GLORIA') || comment === '2') {
+          spawnFollowerOrb({ name, avatar, team: 'aleluia', text: 'ALELUIA 🕊️', points: 5 });
+        } else {
+          const team = Math.random() > 0.5 ? 'amen' : 'aleluia';
+          spawnFollowerOrb({ name, avatar, team, text: data.comment.slice(0, 18), points: 2 });
+        }
+      } else if (ev === 'like') {
+        const team = Math.random() > 0.5 ? 'amen' : 'aleluia';
+        spawnFollowerOrb({ name, avatar, team, text: '❤️ Curtiu', points: 1 });
+      } else if (ev === 'gift') {
+        const team = scoreAmen <= scoreAleluia ? 'amen' : 'aleluia';
+        const giftName = data.giftName || 'Presente';
+        const diamonds = (data.diamondCount || 1) * (data.repeatCount || 1);
+        spawnFollowerOrb({ name, avatar, team, text: giftName, isGift: true, points: Math.max(25, diamonds * 10) });
+      }
+    }
+
+    // Controles de Interface e Simulação
+    function toggleModal() {
+      document.getElementById('config-modal').classList.toggle('open');
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function saveAndConnect() {
+      const url = document.getElementById('ws-url-input').value.trim();
+      localStorage.setItem('tiktok_ws_url', url);
+      connectWebSocket(url);
+      toggleModal();
+    }
+
+    function simulateAction(type) {
+      const names = ['Maria Silva', 'João Pedro', 'Irmã Ana', 'Lucas Santos', 'Ester Oliveira', 'Gabriel Costa'];
+      const name = names[Math.floor(Math.random() * names.length)];
+      const avatar = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
+
+      if (type === 'amen') spawnFollowerOrb({ name, avatar, team: 'amen', text: 'AMÉM ✨', points: 5 });
+      if (type === 'aleluia') spawnFollowerOrb({ name, avatar, team: 'aleluia', text: 'ALELUIA 🕊️', points: 5 });
+      if (type === 'gift_amen') spawnFollowerOrb({ name, avatar, team: 'amen', text: 'Rosa 🌹', isGift: true, points: 50 });
+      if (type === 'gift_aleluia') spawnFollowerOrb({ name, avatar, team: 'aleluia', text: 'Coroa 👑', isGift: true, points: 100 });
+    }
+
+    function toggleSimulation() {
+      const btn = document.getElementById('sim-toggle-btn');
+      if (simInterval) {
+        clearInterval(simInterval);
+        simInterval = null;
+        btn.textContent = '▶️ Iniciar Simulação Automática';
+      } else {
+        btn.textContent = '⏸️ Pausar Simulação';
+        simInterval = setInterval(() => {
+          const r = Math.random();
+          if (r < 0.42) simulateAction('amen');
+          else if (r < 0.84) simulateAction('aleluia');
+          else if (r < 0.92) simulateAction('gift_amen');
+          else simulateAction('gift_aleluia');
+        }, 1100);
+      }
+    }
+
+    // Carregar URL salva ao abrir no celular
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUrl = localStorage.getItem('tiktok_ws_url');
+      if (savedUrl) {
+        document.getElementById('ws-url-input').value = savedUrl;
+        connectWebSocket(savedUrl);
+      }
+    });
+  </script>
+</body>
+</html>
