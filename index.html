@@ -685,6 +685,9 @@
     let userTeams = {};
     let simInterval = null;
     let ws = null;
+    let keepAliveTimer = null;
+    let reconnectTimer = null;
+    let currentWsUrl = '';
 
     const defaultAvatars = [
       'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
@@ -952,31 +955,66 @@
 
     function connectWebSocket(url) {
       if (!url) return;
-      if (ws) ws.close();
+      currentWsUrl = url;
+      clearTimeout(reconnectTimer);
+      clearInterval(keepAliveTimer);
+
+      if (ws) {
+        ws.onclose = null;
+        ws.onerror = null;
+        try { ws.close(); } catch (e) {}
+      }
+
       const dot = document.getElementById('ws-dot');
       const status = document.getElementById('ws-status');
       status.textContent = 'CONECTANDO...';
 
       try {
         ws = new WebSocket(url);
+
         ws.onopen = () => {
           dot.classList.add('connected');
           status.textContent = 'AO VIVO';
+
+          keepAliveTimer = setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send('ping');
+            }
+          }, 7000);
         };
+
         ws.onclose = () => {
+          clearInterval(keepAliveTimer);
           dot.classList.remove('connected');
-          status.textContent = 'OFFLINE';
-          setTimeout(() => connectWebSocket(url), 5000);
+          status.textContent = 'RECONECTANDO...';
+          reconnectTimer = setTimeout(() => connectWebSocket(currentWsUrl), 1500);
         };
+
+        ws.onerror = () => {
+          try { ws.close(); } catch (e) {}
+        };
+
         ws.onmessage = (event) => {
           try {
-            handleLiveEvent(JSON.parse(event.data));
+            const msg = JSON.parse(event.data);
+            const ev = msg.event || msg.type;
+            if (ev === 'heartbeat' || ev === 'pong' || ev === 'status') return;
+            handleLiveEvent(msg);
           } catch (e) {}
         };
       } catch (err) {
         status.textContent = 'ERRO URL';
+        reconnectTimer = setTimeout(() => connectWebSocket(currentWsUrl), 2000);
       }
     }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && currentWsUrl) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          connectWebSocket(currentWsUrl);
+        }
+      }
+    });
 
     function getFollowerTeam(userId) {
       if (userTeams[userId]) return userTeams[userId];
